@@ -44,18 +44,21 @@
     data() {
       return {
         cities: [
-          { id: 1, name: 'Devoto', cost: 2000 },
-          { id: 2, name: 'La Francia', cost: 2500 },
-          { id: 3, name: 'El Tío', cost: 3000 },
-          { id: 4, name: 'Arroyito', cost: 3500 },
-          { id: 5, name: 'Tránsito', cost: 4000 },
-          { id: 6, name: 'Santiago Temple', cost: 4500 },
-          { id: 7, name: 'Pedro E. Vivas', cost: 5000 },
-          { id: 8, name: 'Río Primero', cost: 5500 },
-          { id: 9, name: 'Piquillín', cost: 6000 },
-          { id: 10, name: 'Montecristo', cost: 6500 },
-          { id: 11, name: 'Malvinas Argentinas', cost: 7000 },
-          { id: 12, name: 'Córdoba', cost: 7900 },
+          { id: 1, name: 'Km 531', cost: 1130 },
+          { id: 2, name: 'Devoto', cost: 1360 },
+          { id: 3, name: 'Jeanmaire', cost: 1740 },
+          { id: 4, name: 'La Francia', cost: 2310 },
+          { id: 5, name: 'Km 581', cost: 2650 },
+          { id: 6, name: 'El Tío', cost: 3060 },
+          { id: 7, name: 'El Fuertecito', cost: 3430 },
+          { id: 8, name: 'Arroyito', cost: 3750 },
+          { id: 9, name: 'Puente del Río Segundo', cost: 3570 },
+          { id: 10, name: 'Tránsito', cost: 3790 },
+          { id: 11, name: 'Santiago Temple', cost: 4840 },
+          { id: 12, name: 'Pedro Vivas', cost: 4900 },
+          { id: 13, name: 'Río Primero', cost: 5190 },
+          { id: 14, name: 'K711 Malvinas Argentinas', cost: 6770 },
+          { id: 15, name: 'Córdoba', cost: 7920 },
         ] as City[],
         paymentAmount: 0, // Variable para almacenar el monto del pago del cliente
         selectedCity: null as City | null, // Ciudad seleccionada
