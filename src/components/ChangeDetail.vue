@@ -77,7 +77,7 @@
     <!-- Botón para mostrar u ocultar la sección de compras -->
     <button @click="togglePurchasesSection" class="toggle-section-button">{{ showPurchasesSection ? 'Ocultar Ventas realizadas' : 'Mostrar Ventas realizadas' }}</button>
 
-    <!-- Sección para mostrar las compras realizadas -->
+    <!-- Sección para mostrar las compras realizadas 
     <div class="purchases-section" v-if="showPurchasesSection">
       <h3>Ventas Realizadas</h3>
       <ul>
@@ -91,6 +91,22 @@
       </ul>
       <p>Total de Ventas del Día: $ {{ totalSales }}</p>
     </div>
+-->
+<!-- Sección para mostrar las compras realizadas -->
+<div class="purchases-section" v-if="showPurchasesSection">
+  <h3>Ventas Realizadas</h3>
+  <ul>
+    <li v-for="(purchase, index) in purchases" :key="index">
+      <p>Fecha de compra: {{ purchase.datetime }}</p> <!-- Mostrar la fecha de compra -->
+      <ul>
+        <li v-for="(item, i) in purchase.items" :key="i">
+          <span>{{ item.city.name }} - Cantidad: {{ item.quantity }} - Total: $ {{ item.total }}</span>
+        </li>
+      </ul>
+    </li>
+  </ul>
+  <p>Total de Ventas del Día: $ {{ totalSales }}</p>
+</div>
 
 
 
@@ -114,8 +130,9 @@ interface CartItem {
 }
 
 interface Purchase {
+  datetime: string;
   items: CartItem[];
-} 
+}
 
 export default defineComponent({
   name: 'ChangeDetail',
@@ -218,7 +235,7 @@ export default defineComponent({
     removeFromCart(index: number) {
       this.cart.splice(index, 1);
     },
-
+/*/
     completePurchase() {
       const purchase: Purchase = {
         items: this.cart,
@@ -229,7 +246,33 @@ export default defineComponent({
       localStorage.setItem('purchases', JSON.stringify(purchases));
 
       this.cart = [];
+    },*/
+
+    completePurchase() {
+      const currentDate = new Date(); // Obtener la fecha y hora actual
+
+      // Formatear la fecha y hora en una cadena legible
+      const formattedDate = currentDate.toLocaleString('es-AR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      });
+
+      const purchase: Purchase = {
+        datetime: formattedDate, // Usar la fecha y hora formateada
+        items: this.cart,
+      };
+
+      const purchases = JSON.parse(localStorage.getItem('purchases') || '[]') as Purchase[];
+      purchases.push(purchase);
+      localStorage.setItem('purchases', JSON.stringify(purchases));
+
+      this.cart = [];
     },
+
 
 
     togglePurchasesSection() {
