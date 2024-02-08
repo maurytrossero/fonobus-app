@@ -19,7 +19,6 @@
       </li>
     </ul>
 
-
     <!-- Etiqueta para mostrar la ciudad seleccionada -->
     <div class="selected-city" v-if="selectedCity">
       <label>Ciudad Seleccionada:</label>
@@ -53,9 +52,8 @@
       </ul>
       <p class="total-purchase-label" v-if="totalPurchase > 0">Total de la Compra: $ {{ totalPurchase }}</p>
 
-    <!-- Botón para realizar la compra del carrito -->
-    <button @click="completePurchase" v-if="cart.length > 0" class="complete-purchase-button">Comprar Carrito</button>
-
+      <!-- Botón para realizar la compra del carrito -->
+      <button @click="completePurchase" v-if="cart.length > 0" class="complete-purchase-button">Comprar Carrito</button>
     </div>
 
 
@@ -92,22 +90,56 @@
       <p>Total de Ventas del Día: $ {{ totalSales }}</p>
     </div>
 -->
-<!-- Sección para mostrar las compras realizadas -->
-<div class="purchases-section" v-if="showPurchasesSection">
-  <h3>Ventas Realizadas</h3>
-  <ul>
-    <li v-for="(purchase, index) in purchases" :key="index">
-      <p>Fecha de compra: {{ purchase.datetime }}</p> <!-- Mostrar la fecha de compra -->
+    <!-- Sección para mostrar las compras realizadas -->
+    <div class="purchases-section" v-if="showPurchasesSection">
+      <h3>Ventas Realizadas</h3>
       <ul>
-        <li v-for="(item, i) in purchase.items" :key="i">
-          <span>{{ item.city.name }} - Cantidad: {{ item.quantity }} - Total: $ {{ item.total }}</span>
+        <li v-for="(purchase, index) in purchases" :key="index">
+          <p>Fecha de compra: {{ purchase.datetime }}</p> <!-- Mostrar la fecha de compra -->
+          <ul>
+            <li v-for="(item, i) in purchase.items" :key="i">
+              <span>{{ item.city.name }} - Cantidad: {{ item.quantity }} - Total: $ {{ item.total }}</span>
+            </li>
+          </ul>
         </li>
       </ul>
-    </li>
-  </ul>
-  <p>Total de Ventas del Día: $ {{ totalSales }}</p>
-</div>
+      <p>Total de Ventas del Día: $ {{ totalSales }}</p>
+    </div>
 
+    <!-- Contenedor para el botón de guardar informe -->
+    <div class="save-sales">
+      <!-- Botón para guardar informe -->
+          <button @click="downloadReport" style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Descargar Informe de Ventas</button>
+    </div>
+
+    <!-- Botón para abrir el informe -->
+    <div class="open-report-container">
+      <input type="file" accept=".json" id="report-input" @change="readReport" class="report-input">
+      <label for="report-input" class="report-label">Abrir Informe</label>
+    </div>
+
+
+      <!-- Sección para mostrar el informe -->
+      <div v-if="reportData">
+        <h3>Informe de Ventas</h3>
+        <p>Fecha: {{ reportData.date }}</p>
+        <ul>
+          <li v-for="(item, index) in reportData.sales" :key="index">
+            <p>Fecha de compra: {{ item.datetime }}</p>
+            <ul>
+              <li v-for="(city, i) in item.items" :key="i">
+                <span>{{ city.name }} - Cantidad: {{ city.quantity }} - Total: $ {{ city.total }}</span>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+    <!-- Contenedor para el botón de resetear ventas -->
+    <div class="reset-sales-container">
+      <!-- Botón para resetear las ventas realizadas -->
+      <button @click="resetSales" class="reset-sales-button">Resetear Ventas</button>
+    </div>
 
 
   </div>
@@ -162,7 +194,9 @@ export default defineComponent({
       cart: [] as CartItem[],
       purchases: JSON.parse(localStorage.getItem('purchases') || '[]') as Purchase[],
       showPurchasesSection: false,
-      showCityList: true
+      showCityList: true,
+      showReportSection: false,
+      reportData: null as null | { date: string; sales: any[] }, // Inicializado como null
     };
   },
   mounted() {
@@ -273,8 +307,6 @@ export default defineComponent({
       this.cart = [];
     },
 
-
-
     togglePurchasesSection() {
       this.showPurchasesSection = !this.showPurchasesSection;
     },
@@ -282,6 +314,81 @@ export default defineComponent({
     toggleCityList() {
       this.showCityList = !this.showCityList;
     },
+
+    resetSales() {
+      // Mostrar una alerta para confirmar si el usuario está seguro de resetear las ventas
+      if (confirm('¿Estás seguro de que quieres resetear las ventas realizadas?')) {
+        // Limpiar el localStorage
+        localStorage.removeItem('purchases');
+        // Reiniciar el arreglo de compras
+        this.purchases = [];
+        // También podrías añadir otra lógica aquí, como reiniciar otras variables relacionadas con las ventas
+      }
+    },
+
+    //Metodo para guardar reporte del dia
+    downloadReport() {
+      const currentDate = new Date(); // Obtener la fecha y hora actual
+      const day = String(currentDate.getDate()).padStart(2, '0');
+      const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const year = String(currentDate.getFullYear());
+
+      const formattedDate = `Informe-Ventas-${day}-${month}-${year}`;
+
+      // Agregar la fecha al informe de ventas antes de convertirlo a JSON
+      const salesReport = {
+        date: formattedDate, // Agregar la fecha actual al informe
+        sales: this.purchases, // Usar las ventas existentes
+      };
+
+      // Convertir el informe de ventas a JSON
+      const salesReportJSON = JSON.stringify(salesReport);
+
+      // Crear un objeto Blob con el JSON
+      const blob = new Blob([salesReportJSON], { type: 'application/json' });
+
+      // Crear un enlace <a> para descargar el archivo
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${formattedDate}.json`; // Nombre del archivo de descarga con formato de fecha
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    },
+
+    //Metodo para leer informe guardado
+    readReport(event: Event) {
+      const input = event.target as HTMLInputElement;
+      const file = input.files?.[0];
+      
+      if (!file) return; // No se seleccionó ningún archivo
+      
+      const reader = new FileReader();
+      
+      reader.onload = () => {
+        try {
+          const salesReport = JSON.parse(reader.result as string);
+
+          // Validar si el informe tiene el formato esperado
+          if (salesReport && salesReport.date && salesReport.sales) {
+            // Mostrar la sección del informe con la información leída
+            this.showReportSection = true;
+            this.reportData = salesReport;
+          } else {
+            alert('El archivo seleccionado no tiene un formato válido.');
+          }
+        } catch (error) {
+          alert('Ocurrió un error al leer el archivo. Asegúrate de seleccionar un archivo JSON válido.');
+          console.error(error);
+        }
+      };
+      
+      reader.readAsText(file);
+    }
+
+
   },
 });
 </script>
@@ -492,5 +599,67 @@ body {
     border-top: 1px solid #ccc; /* Establece el grosor y el color de la línea */
     margin: 20px 0; /* Agrega espacio alrededor de la línea */
 }
+
+.reset-sales-button {
+  background-color: #ff0000; /* Rojo para indicar una acción peligrosa */
+  color: #ffffff; /* Texto blanco para mayor contraste */
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.reset-sales-button:hover {
+  background-color: #cc0000; /* Color más oscuro al pasar el cursor para indicar interactividad */
+}
+
+.reset-sales-container {
+  margin-top: 10px; /* Ajusta el margen superior según sea necesario */
+}
+.reset-sales-button:active {
+  background-color: #aa0000; /* Color aún más oscuro cuando se hace clic para indicar que se está ejecutando una acción */
+}
+
+.download-report-button {
+  background-color: #4CAF50; /* Color de fondo */
+  border: none;
+  color: white; /* Color del texto */
+  padding: 10px 20px; /* Espaciado interno */
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+  border-radius: 5px; /* Bordes redondeados */
+}
+.save-sales {
+  margin-top: 10px; /* Ajusta el margen superior según sea necesario */
+}
+
+.open-report-container {
+  margin-top: 20px; /* Espacio entre el botón y otros elementos */
+}
+
+.report-input {
+  display: none; /* Oculta el input real */
+}
+
+.report-label {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff; /* Azul para indicar una acción positiva */
+  color: white; /* Texto blanco para mayor contraste */
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  display: inline-block; /* Añadimos esto para que ocupe solo el espacio necesario */
+}
+
+.report-label:hover {
+  background-color: #0056b3; /* Color más oscuro al pasar el cursor para indicar interactividad */
+}
+
 
 </style>
