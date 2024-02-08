@@ -65,8 +65,6 @@
       <input type="number" id="payment" v-model="paymentAmount">
     </div>
 
-
-
     <!-- Etiqueta para mostrar el cambio a devolver al cliente -->
     <div class="change-label" v-if="cart.length > 0 && paymentAmount > 0">
       <label for="change">Cambio para el Cliente: </label>
@@ -77,7 +75,7 @@
     <div class="section-separator"></div>
 
     <!-- Botón para mostrar u ocultar la sección de compras -->
-    <button @click="togglePurchasesSection" class="toggle-section-button">{{ showPurchasesSection ? 'Ocultar Compras' : 'Mostrar Compras' }}</button>
+    <button @click="togglePurchasesSection" class="toggle-section-button">{{ showPurchasesSection ? 'Ocultar Ventas realizadas' : 'Mostrar Ventas realizadas' }}</button>
 
     <!-- Sección para mostrar las compras realizadas -->
     <div class="purchases-section" v-if="showPurchasesSection">
