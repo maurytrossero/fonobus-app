@@ -28,13 +28,13 @@
 
     <!-- Input para la cantidad de pasajes vendidos -->
     <div class="ticket-input" v-if="selectedCity">
-      <label for="ticketQuantity">Cantidad de Pasajes Vendidos: </label>
+      <label for="ticketQuantity">Cantidad de Pasajes: </label>
       <input type="number" id="ticketQuantity" v-model.number="selectedCity.quantity" min="1">
     </div>
 
     <!-- Etiqueta para mostrar el total de la compra -->
         <div class="total-purchase" v-if="selectedCity">
-      <label for="totalPurchase">Total de la Compra: $ </label>
+      <label for="totalPurchase">Total: $ </label>
       <span>{{ totalTicketsCost }}</span>
     </div>
 
@@ -69,7 +69,7 @@
 
     <!-- Etiqueta para mostrar el cambio a devolver al cliente -->
     <div class="change-label" v-if="cart.length > 0 && paymentAmount > 0">
-      <label for="change">Cambio a Devolver al Cliente: </label>
+      <label for="change">Cambio para el Cliente: </label>
       <span>{{ changeToReturn }}</span>
     </div>
 
@@ -81,7 +81,7 @@
 
     <!-- Sección para mostrar las compras realizadas -->
     <div class="purchases-section" v-if="showPurchasesSection">
-      <h3>Compras Realizadas</h3>
+      <h3>Ventas Realizadas</h3>
       <ul>
         <li v-for="(purchase, index) in purchases" :key="index">
           <ul>
