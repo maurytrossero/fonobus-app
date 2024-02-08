@@ -1,19 +1,24 @@
 <template>
   <div class="change-detail-container">
 
-    <h2 class="title">Detalle de Cambios</h2>
+    <h2 class="title">Venta de pasajes</h2>
 
     <!-- Campo de búsqueda -->
     <div class="search-container">
       <input type="text" v-model="searchTerm" placeholder="Buscar ciudad...">
     </div>
+
+    <!-- Botón para mostrar u ocultar la sección de destinos -->
+    <button @click="toggleCityList"  class="toggle-section-button">{{ showCityList ? 'Ocultar Destinos' : 'Mostrar Destinos' }}</button>
+
     <!-- Listado de ciudades filtradas -->
-    <ul class="city-list">
+    <ul class="city-list" v-if="showCityList">
       <li v-for="(city, index) in filteredCities" :key="city.id" class="city-item" :class="{ 'separator': index !== filteredCities.length - 1 }" @click="selectCity(city)">
         <span class="city-name">{{ city.name }}</span>
-        <span class="city-cost">{{ city.cost }}</span>
+        <span class="city-cost"> $ {{ city.cost }}</span>
       </li>
     </ul>
+
 
     <!-- Etiqueta para mostrar la ciudad seleccionada -->
     <div class="selected-city" v-if="selectedCity">
@@ -23,8 +28,14 @@
 
     <!-- Input para la cantidad de pasajes vendidos -->
     <div class="ticket-input" v-if="selectedCity">
-      <label for="ticketQuantity">Cantidad de Pasajes Vendidos:</label>
+      <label for="ticketQuantity">Cantidad de Pasajes Vendidos: </label>
       <input type="number" id="ticketQuantity" v-model.number="selectedCity.quantity" min="1">
+    </div>
+
+    <!-- Etiqueta para mostrar el total de la compra -->
+        <div class="total-purchase" v-if="selectedCity">
+      <label for="totalPurchase">Total de la Compra: $ </label>
+      <span>{{ totalTicketsCost }}</span>
     </div>
 
     <!-- Botón para agregar al carrito -->
@@ -36,30 +47,51 @@
       <ul>
         <li v-for="(item, index) in cart" :key="index">
           <span>{{ item.city.name }} - Cantidad: {{ item.quantity }} </span>
-          <span> - Total: {{ item.total }}</span>
+          <span> - Total: $ {{ item.total }}</span>
           <button @click="removeFromCart(index)" class="remove-from-cart-button">Eliminar</button>
         </li>
       </ul>
-      <p class="total-purchase-label" v-if="totalPurchase > 0">Total de la Compra: {{ totalPurchase }}</p>
+      <p class="total-purchase-label" v-if="totalPurchase > 0">Total de la Compra: $ {{ totalPurchase }}</p>
+
+    <!-- Botón para realizar la compra del carrito -->
+    <button @click="completePurchase" v-if="cart.length > 0" class="complete-purchase-button">Comprar Carrito</button>
+
     </div>
 
 
     <!-- Input para el pago del cliente -->
     <div class="payment-input">
-      <label for="payment">Pago del Cliente:</label>
+      <label for="payment">Pago del Cliente: $ </label>
       <input type="number" id="payment" v-model="paymentAmount">
     </div>
 
-    <!-- Etiqueta para mostrar el total de la compra -->
-    <div class="total-purchase" v-if="selectedCity">
-      <label for="totalPurchase">Total de la Compra:</label>
-      <span>{{ totalTicketsCost }}</span>
-    </div>
+
 
     <!-- Etiqueta para mostrar el cambio a devolver al cliente -->
     <div class="change-label" v-if="cart.length > 0 && paymentAmount > 0">
-      <label for="change">Cambio a Devolver al Cliente:</label>
+      <label for="change">Cambio a Devolver al Cliente: </label>
       <span>{{ changeToReturn }}</span>
+    </div>
+
+    <!-- Separador -->
+    <div class="section-separator"></div>
+
+    <!-- Botón para mostrar u ocultar la sección de compras -->
+    <button @click="togglePurchasesSection" class="toggle-section-button">{{ showPurchasesSection ? 'Ocultar Compras' : 'Mostrar Compras' }}</button>
+
+    <!-- Sección para mostrar las compras realizadas -->
+    <div class="purchases-section" v-if="showPurchasesSection">
+      <h3>Compras Realizadas</h3>
+      <ul>
+        <li v-for="(purchase, index) in purchases" :key="index">
+          <ul>
+            <li v-for="(item, i) in purchase.items" :key="i">
+              <span>{{ item.city.name }} - Cantidad: {{ item.quantity }} - Total: $ {{ item.total }}</span>
+            </li>
+          </ul>
+        </li>
+      </ul>
+      <p>Total de Ventas del Día: $ {{ totalSales }}</p>
     </div>
 
 
@@ -74,7 +106,7 @@ interface City {
   id: number;
   name: string;
   cost: number;
-  quantity: number; // Nueva propiedad para almacenar la cantidad de pasajes vendidos
+  quantity: number;
 }
 
 interface CartItem {
@@ -82,6 +114,10 @@ interface CartItem {
   quantity: number;
   total: number;
 }
+
+interface Purchase {
+  items: CartItem[];
+} 
 
 export default defineComponent({
   name: 'ChangeDetail',
@@ -103,60 +139,74 @@ export default defineComponent({
         { id: 13, name: 'Río Primero', cost: 5190, quantity: 1 },
         { id: 14, name: 'K711 Malvinas Argentinas', cost: 6770, quantity: 1 },
         { id: 15, name: 'Córdoba', cost: 7920, quantity: 1 },
+        { id: 16, name: 'Córdoba - Carlos Paz', cost: 1600, quantity: 1 },
       ] as City[],
       paymentAmount: 0,
       selectedCity: null as City | null,
-      searchTerm: '', // Nueva propiedad para el término de búsqueda
-      cart: [] as CartItem[], // Array para almacenar los elementos seleccionados en el carrito
+      searchTerm: '',
+      cart: [] as CartItem[],
+      purchases: JSON.parse(localStorage.getItem('purchases') || '[]') as Purchase[],
+      showPurchasesSection: false,
+      showCityList: true
     };
   },
+  mounted() {
+    //  localStorage.clear();
+    // Inicializar localStorage si es necesario
+    if (!localStorage.getItem('purchases')) {
+      localStorage.setItem('purchases', '[]');
+    }
+  },
+
   computed: {
     filteredCities(): City[] {
-      // Filtrar ciudades basado en el término de búsqueda
       return this.cities.filter(city =>
         city.name.toLowerCase().includes(this.searchTerm.toLowerCase())
       );
     },
 
     totalTicketsCost(): number {
-      // Calcular el monto total de la compra de pasajes
       return this.selectedCity ? this.selectedCity.cost * this.selectedCity.quantity : 0;
     },
 
     totalPurchase(): number {
-      // Calcular el total de la compra sumando los totales de cada elemento en el carrito
       return this.cart.reduce((total, item) => total + item.total, 0);
     },
 
     changeToReturn(): number | null {
-      // Verificar si el carrito tiene algún elemento añadido
       if (this.cart.length === 0) {
-        return null; // Si el carrito está vacío, no se puede calcular el cambio
+        return null;
       }
 
-      // Calcular el total de la compra sumando los totales de cada elemento en el carrito
       const totalPurchase = this.cart.reduce((total, item) => total + item.total, 0);
-
-      // Calcular el cambio a devolver al cliente
       return this.paymentAmount - totalPurchase;
     },
+    totalSales(): number {
+      let total = 0;
 
+      // Iterar sobre cada compra y sumar los totales de todos los elementos
+      this.purchases.forEach((purchase: Purchase) => {
+        purchase.items.forEach((item: CartItem) => {
+          total += item.total;
+        });
+      });
+
+      return total;
+    },
   },
+
   methods: {
     selectCity(city: City) {
       this.selectedCity = city;
     },
 
     addToCart() {
-      // Verificar si la ciudad ya está en el carrito
       const existingItemIndex = this.cart.findIndex(item => item.city.id === this.selectedCity!.id);
 
       if (existingItemIndex !== -1) {
-        // Si la ciudad ya está en el carrito, actualizar la cantidad y el total
         this.cart[existingItemIndex].quantity = this.selectedCity!.quantity;
         this.cart[existingItemIndex].total = this.selectedCity!.quantity * this.selectedCity!.cost;
       } else {
-        // Si la ciudad no está en el carrito, añadirla
         this.cart.push({
           city: this.selectedCity!,
           quantity: this.selectedCity!.quantity,
@@ -164,16 +214,37 @@ export default defineComponent({
         });
       }
 
-      // Reiniciar la selección de ciudad
       this.selectedCity = null;
     },
 
     removeFromCart(index: number) {
-      this.cart.splice(index, 1); // Eliminar el elemento del carrito en la posición indicada
+      this.cart.splice(index, 1);
+    },
+
+    completePurchase() {
+      const purchase: Purchase = {
+        items: this.cart,
+      };
+
+      const purchases = JSON.parse(localStorage.getItem('purchases') || '[]') as Purchase[];
+      purchases.push(purchase);
+      localStorage.setItem('purchases', JSON.stringify(purchases));
+
+      this.cart = [];
+    },
+
+
+    togglePurchasesSection() {
+      this.showPurchasesSection = !this.showPurchasesSection;
+    },
+
+    toggleCityList() {
+      this.showCityList = !this.showCityList;
     },
   },
 });
 </script>
+
 
 <style scoped>
 /* Estilos mejorados para el componente de detalle de cambios */
@@ -338,4 +409,47 @@ body {
   font-size: 18px; /* Tamaño de fuente más grande */
   color: #007bff; /* Color azul para resaltar */
 }
+
+.toggle-section-button {
+  margin-bottom: 10px;
+}
+.purchases-section {
+  /* Estilos para la sección de compras */
+  margin-top: 10px;
+  border: 1px solid #ccc;
+  padding: 10px;
+}
+
+/* Estilos para el botón de mostrar/ocultar compras */
+.toggle-section-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.toggle-section-button:hover {
+  background-color: #0056b3;
+}
+
+/* Estilos para el botón de comprar carrito */
+.complete-purchase-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+}
+
+.complete-purchase-button:hover {
+  background-color: #218838;
+}
+
+.section-separator {
+    border-top: 1px solid #ccc; /* Establece el grosor y el color de la línea */
+    margin: 20px 0; /* Agrega espacio alrededor de la línea */
+}
+
 </style>
